@@ -1,0 +1,77 @@
+version: '3'
+services:
+  nginx:
+    container_name: nginx
+    build:
+      context: ./docker/nginx
+      dockerfile: Dockerfile
+    ports:
+      - 8000:80
+    tty: true
+    restart: always
+    depends_on:
+      - web
+
+  web:
+    container_name: web
+    build:
+      context: ./docker/web
+      dockerfile: Dockerfile
+    environment:
+      PORT: '3000'
+      HOST: '0.0.0.0'
+      #CHOKIDAR_USEPOLLING=true ホットリロード
+    ports:
+      - "3000:3000"
+    #expose:
+      #- 3000
+    volumes:
+      - ./src/frontend:/app
+    stdin_open: true
+    tty: true
+    restart: always
+
+  api:
+    container_name: api
+    build:
+      context: ./docker/api
+      dockerfile: Dockerfile
+    environment:
+      LANG: 'ja_JP.UTF-8'
+      TZ: 'Asia/Tokyo'
+      LOG_CHANNEL: 'stderr'
+      DB_CONNECTION: 'mysql'
+      DB_HOST: 'db'
+      DB_PORT: '3306'
+      DB_DATABASE: 'local'
+      DB_USERNAME: 'user'
+      DB_PASSWORD: 'secret'
+      SESSION_DOMAIN: 'localhost'
+      SANCTUM_STATEFUL_DOMAINS: 'localhost'
+    volumes:
+      - ./src/backend:/app
+    expose:
+      - 9000
+    tty: true
+    restart: always
+    depends_on:
+      - db
+
+  db:
+    container_name: db
+    build:
+      context: ./docker/db
+      dockerfile: Dockerfile
+    environment:
+      TZ: 'Asia/Tokyo'
+      MYSQL_DATABASE: 'local'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'secret'
+      MYSQL_ROOT_PASSWORD: 'root'
+    volumes:
+      - db:/var/lib/mysql
+    ports:
+      - 3306:3306
+
+volumes:
+  db:
